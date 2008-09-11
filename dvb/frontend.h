@@ -250,61 +250,58 @@ struct dvb_frontend_event {
  * don't insert random new commands and break backwards
  * binary compatability.
  */
-typedef enum tv_cmd_types {
-	TV_SEQ_UNDEFINED,
-	TV_SEQ_START,
-	TV_SEQ_CONTINUE,
-	TV_SEQ_COMPLETE,
-	TV_SEQ_TERMINATE,
+typedef enum dtv_cmd_types {
+	DTV_TUNE,
+	DTV_CLEAR,
 
-	TV_SET_FREQUENCY,
-	TV_SET_MODULATION,
-	TV_SET_BANDWIDTH,
-	TV_SET_INVERSION,
-	TV_SET_DISEQC_MASTER,
-	TV_SET_SYMBOLRATE,
-	TV_SET_INNERFEC,
-	TV_SET_VOLTAGE,
-	TV_SET_TONE,
-	TV_SET_PILOT,
-	TV_SET_ROLLOFF,
+	DTV_SET_FREQUENCY,
+	DTV_SET_MODULATION,
+	DTV_SET_BANDWIDTH,
+	DTV_SET_INVERSION,
+	DTV_SET_DISEQC_MASTER,
+	DTV_SET_SYMBOL_RATE,
+	DTV_SET_INNER_FEC,
+	DTV_SET_VOLTAGE,
+	DTV_SET_TONE,
+	DTV_SET_PILOT,
+	DTV_SET_ROLLOFF,
 
-	TV_GET_FREQUENCY,
-	TV_GET_MODULATION,
-	TV_GET_BANDWIDTH,
-	TV_GET_INVERSION,
-	TV_GET_DISEQC_SLAVE_REPLY,
-	TV_GET_SYMBOLRATE,
-	TV_GET_INNERFEC,
-	TV_GET_VOLTAGE,
-	TV_GET_TONE,
-	TV_GET_PILOT,
-	TV_GET_ROLLOFF,
+	DTV_GET_FREQUENCY,
+	DTV_GET_MODULATION,
+	DTV_GET_BANDWIDTH,
+	DTV_GET_INVERSION,
+	DTV_GET_DISEQC_SLAVE_REPLY,
+	DTV_GET_SYMBOL_RATE,
+	DTV_GET_INNER_FEC,
+	DTV_GET_VOLTAGE,
+	DTV_GET_TONE,
+	DTV_GET_PILOT,
+	DTV_GET_ROLLOFF,
 
 	/* Basic enumeration set for querying unlimited capabilities */
-	TV_GET_FE_CAPABILITY_COUNT,
-	TV_GET_FE_CAPABILITY,
+	DTV_GET_FE_CAPABILITY_COUNT,
+	DTV_GET_FE_CAPABILITY,
 
 	/* New commands are always appended */
-	TV_SET_DELIVERY_SYSTEM,
-	TV_GET_DELIVERY_SYSTEM,
+	DTV_SET_DELIVERY_SYSTEM,
+	DTV_GET_DELIVERY_SYSTEM,
 
 	/* ISDB-T */
-	TV_SET_ISDB_SEGMENT_NUM,
-	TV_GET_ISDB_SEGMENT_NUM,
-	TV_SET_ISDB_SEGMENT_WIDTH,
-	TV_GET_ISDB_SEGMENT_WIDTH,
-	TV_GET_ISDB_LAYERA_FEC,
-	TV_GET_ISDB_LAYERA_MODULATION,
-	TV_GET_ISDB_LAYERA_SEGMENT_WIDTH,
-	TV_GET_ISDB_LAYERB_FEC,
-	TV_GET_ISDB_LAYERB_MODULATION,
-	TV_GET_ISDB_LAYERB_SEGMENT_WIDTH,
-	TV_GET_ISDB_LAYERC_FEC,
-	TV_GET_ISDB_LAYERC_MODULATION,
-	TV_GET_ISDB_LAYERC_SEGMENT_WIDTH,
+	DTV_SET_ISDB_SEGMENT_NUM,
+	DTV_GET_ISDB_SEGMENT_NUM,
+	DTV_SET_ISDB_SEGMENT_WIDTH,
+	DTV_GET_ISDB_SEGMENT_WIDTH,
+	DTV_GET_ISDB_LAYERA_FEC,
+	DTV_GET_ISDB_LAYERA_MODULATION,
+	DTV_GET_ISDB_LAYERA_SEGMENT_WIDTH,
+	DTV_GET_ISDB_LAYERB_FEC,
+	DTV_GET_ISDB_LAYERB_MODULATION,
+	DTV_GET_ISDB_LAYERB_SEGMENT_WIDTH,
+	DTV_GET_ISDB_LAYERC_FEC,
+	DTV_GET_ISDB_LAYERC_MODULATION,
+	DTV_GET_ISDB_LAYERC_SEGMENT_WIDTH,
 
-} tv_cmd_types_t;
+} dtv_cmd_types_t;
 
 typedef enum fe_pilot {
 	PILOT_ON,
@@ -337,7 +334,7 @@ typedef enum fe_delivery_system {
 	SYS_DAB,
 } fe_delivery_system_t;
 
-struct tv_cmds_h {
+struct dtv_cmds_h {
 	char	*name;		/* A display name for debugging purposes */
 
 	__u32	cmd;		/* A unique ID */
@@ -348,22 +345,32 @@ struct tv_cmds_h {
 	__u32	reserved:30;	/* Align */
 };
 
-typedef struct {
+struct dtv_property {
 	__u32 cmd;
+	__u32 reserved[3];
 	union {
+		__s32 valuemin;
+		__s32 valuemax;
 		__u32 data;
 		struct {
 			__u8 data[32];
 			__u32 len;
+			__u32 reserved1[3];
+			void *reserved2;
 		} buffer;
 	} u;
-} tv_property_t;
+} __attribute__ ((packed));
 
 /* No more than 16 properties during any given ioctl */
-typedef tv_property_t tv_properties_t[16];
+struct dtv_properties {
+	__u32 num;
+	struct dtv_property *props;
+};
 
-#define FE_SET_PROPERTY		   _IOW('o', 82, tv_properties_t)
-#define FE_GET_PROPERTY		   _IOR('o', 83, tv_properties_t)
+#define DTV_IOCTL_MAX_MSGS 64
+
+#define FE_SET_PROPERTY		   _IOW('o', 82, struct dtv_properties)
+#define FE_GET_PROPERTY		   _IOR('o', 83, struct dtv_properties)
 
 
 /**

@@ -347,18 +347,20 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 		   int modulation, int fec, int rolloff)
 {
 	struct dvb_frontend_event ev;
-	tv_properties_t p = {
-		{ .cmd = TV_SEQ_START },
-		{ .cmd = TV_SET_FREQUENCY,       .u.data = ifreq },
-		{ .cmd = TV_SET_INVERSION,       .u.data = INVERSION_AUTO },
-		{ .cmd = TV_SET_SYMBOLRATE,      .u.data = sr },
-		{ .cmd = TV_SET_INNERFEC,        .u.data = fec },
-		{ .cmd = TV_SET_MODULATION,      .u.data = modulation },
-		{ .cmd = TV_SET_ROLLOFF,         .u.data = rolloff },
-		{ .cmd = TV_SEQ_COMPLETE },
-		{ .cmd = 0 },
+	struct dtv_property p[] = {
+		{ .cmd = DTV_SET_DELIVERY_SYSTEM,	.u.data = delsys },
+		{ .cmd = DTV_SET_FREQUENCY,		.u.data = ifreq },
+		{ .cmd = DTV_SET_MODULATION,		.u.data = modulation },
+		{ .cmd = DTV_SET_SYMBOL_RATE,		.u.data = sr },
+		{ .cmd = DTV_SET_INNER_FEC,		.u.data = fec },
+		{ .cmd = DTV_SET_INVERSION,		.u.data = INVERSION_AUTO },
+		{ .cmd = DTV_SET_ROLLOFF,		.u.data = rolloff },
+		{ .cmd = DTV_TUNE },
 	};
-
+	struct dtv_properties cmdseq = {
+		.num = 8,
+		.props = p
+	};
 	/* discard stale QPSK events */
 	while (1) {
 		if (ioctl(fefd, FE_GET_EVENT, &ev) == -1)
@@ -368,7 +370,7 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 	if ((delsys != SYS_DVBS) && (delsys != SYS_DVBS2))
 		return -EINVAL;
 
-	if ((ioctl(fefd, FE_SET_PROPERTY, &p)) == -1) {
+	if ((ioctl(fefd, FE_SET_PROPERTY, &cmdseq)) == -1) {
 		perror("FE_SET_PROPERTY failed");
 		return FALSE;
 	}
