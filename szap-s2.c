@@ -348,13 +348,13 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 {
 	struct dvb_frontend_event ev;
 	struct dtv_property p[] = {
-		{ .cmd = DTV_SET_DELIVERY_SYSTEM,	.u.data = delsys },
-		{ .cmd = DTV_SET_FREQUENCY,		.u.data = ifreq },
-		{ .cmd = DTV_SET_MODULATION,		.u.data = modulation },
-		{ .cmd = DTV_SET_SYMBOL_RATE,		.u.data = sr },
-		{ .cmd = DTV_SET_INNER_FEC,		.u.data = fec },
-		{ .cmd = DTV_SET_INVERSION,		.u.data = INVERSION_AUTO },
-		{ .cmd = DTV_SET_ROLLOFF,		.u.data = rolloff },
+		{ .cmd = DTV_DELIVERY_SYSTEM,	.u.data = delsys },
+		{ .cmd = DTV_FREQUENCY,		.u.data = ifreq },
+		{ .cmd = DTV_MODULATION,	.u.data = modulation },
+		{ .cmd = DTV_SYMBOL_RATE,	.u.data = sr },
+		{ .cmd = DTV_INNER_FEC,		.u.data = fec },
+		{ .cmd = DTV_INVERSION,		.u.data = INVERSION_AUTO },
+		{ .cmd = DTV_ROLLOFF,		.u.data = rolloff },
 		{ .cmd = DTV_TUNE },
 	};
 	struct dtv_properties cmdseq = {
