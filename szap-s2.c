@@ -316,6 +316,7 @@ void diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
 		usleep(15 * 1000);
 	if (ioctl(fd, FE_SET_TONE, t) == -1)
 		perror("FE_SET_TONE failed");
+
 }
 
 
@@ -430,6 +431,15 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 	   int dvr, int rec_psi, int bypass, unsigned int delivery,
 	   int modulation, int fec, int rolloff,  int human_readable)
 {
+	struct dtv_property p[] = {
+		{ .cmd = DTV_CLEAR },
+	};
+
+	struct dtv_properties cmdseq = {
+		.num = 1,
+		.props = p
+	};
+
 	char fedev[128], dmxdev[128], auddev[128];
 	static int fefd, dmxfda, dmxfdv, audiofd = -1, patfd, pmtfd;
 	int pmtpid;
@@ -446,13 +456,6 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 			perror("opening frontend failed");
 			return FALSE;
 		}
-		
-/*		result = ioctl(fefd, DVBFE_SET_DELSYS, &delivery);
-		if (result < 0) {
-			perror("ioctl DVBFE_SET_DELSYS failed");
-			close(fefd);
-			return FALSE;
-		}*/
 		
 		if ((dmxfdv = open(dmxdev, O_RDWR)) < 0) {
 			perror("opening video demux failed");
@@ -491,7 +494,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 		}
 	}
 
-		
+
 	hiband = 0;
 	if (lnb_type.switch_val && lnb_type.high_val &&
 		freq >= lnb_type.switch_val)
@@ -506,6 +509,11 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 		ifreq = freq - lnb_type.low_val;
 	}
 	result = FALSE;
+
+	if ((ioctl(fefd, FE_SET_PROPERTY, &cmdseq)) == -1) {
+		perror("FE_SET_PROPERTY failed");
+		return FALSE;
+	}
 
 	if (diseqc(fefd, sat_no, pol, hiband))
 		if (do_tune(fefd, ifreq, sr, delivery, modulation, fec, rolloff))
