@@ -280,7 +280,7 @@ typedef enum dtv_cmd_types {
 
 	/* New commands are always appended */
 	DTV_DELIVERY_SYSTEM,
-
+#if 0
 	/* ISDB */
 	/* maybe a dup of DTV_ISDB_SOUND_BROADCASTING_SUBCHANNEL_ID ??? */
 	DTV_ISDB_SEGMENT_IDX,
@@ -309,7 +309,7 @@ typedef enum dtv_cmd_types {
 	DTV_ISDB_LAYERC_MODULATION,
 	DTV_ISDB_LAYERC_SEGMENT_WIDTH,
 	DTV_ISDB_LAYERC_TIME_INTERLEAVING,
-
+#endif
 } dtv_cmd_types_t;
 
 typedef enum fe_pilot {
@@ -358,8 +358,6 @@ struct dtv_property {
 	__u32 cmd;
 	__u32 reserved[3];
 	union {
-		__s32 valuemin;
-		__s32 valuemax;
 		__u32 data;
 		struct {
 			__u8 data[32];
