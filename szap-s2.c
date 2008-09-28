@@ -110,7 +110,7 @@ static struct t_channel_parameter_map modulation_values[] = {
   {   2, QPSK,    "QPSK" },
 //  {   3, DVBFE_MOD_OQPSK,   "OQPSK" },
   {   5, _8PSK,    "8PSK" },
-//  {   6, _16APSK,  "16APSK" },
+  {   6, _16APSK,  "16APSK" },
 //  {   7, DVBFE_MOD_32APSK,  "32APSK" },
 //  {   8, DVBFE_MOD_OFDM,    "OFDM" },
 //  {   9, DVBFE_MOD_COFDM,   "COFDM" },

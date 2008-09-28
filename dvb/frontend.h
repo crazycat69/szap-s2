@@ -246,71 +246,60 @@ struct dvb_frontend_event {
 	struct dvb_frontend_parameters parameters;
 };
 
-/* TODO: Turn this into a series of defines, so future maintainers
- * don't insert random new commands and break backwards
- * binary compatability.
- */
-typedef enum dtv_cmd_types {
-	DTV_UNDEFINED,
-	DTV_TUNE,
-	DTV_CLEAR,
+/* S2API Commands */
+#define DTV_UNDEFINED		0
+#define DTV_TUNE		1
+#define DTV_CLEAR		2
+#define DTV_FREQUENCY		3
+#define DTV_MODULATION		4
+#define DTV_BANDWIDTH_HZ	5
+#define DTV_INVERSION		6
+#define DTV_DISEQC_MASTER	7
+#define DTV_SYMBOL_RATE		8
+#define DTV_INNER_FEC		9
+#define DTV_VOLTAGE		10
+#define DTV_TONE		11
+#define DTV_PILOT		12
+#define DTV_ROLLOFF		13
+#define DTV_DISEQC_SLAVE_REPLY	14
 
-	DTV_FREQUENCY,
-	DTV_MODULATION,
+/* Basic enumeration set for querying unlimited capabilities */
+#define DTV_FE_CAPABILITY_COUNT	15
+#define DTV_FE_CAPABILITY	16
+#define DTV_DELIVERY_SYSTEM	17
 
-	/* XXX PB: I would like to have field which describes the
-	 * bandwidth of a channel in Hz or kHz - maybe we can remove the
-	 * DTV_BANDWIDTH now and put a compat layer */
-	DTV_BANDWIDTH_HZ,
-
-	DTV_INVERSION,
-	DTV_DISEQC_MASTER,
-	DTV_SYMBOL_RATE,
-	DTV_INNER_FEC,
-	DTV_VOLTAGE,
-	DTV_TONE,
-	DTV_PILOT,
-	DTV_ROLLOFF,
-
-	DTV_DISEQC_SLAVE_REPLY,
-
-	/* Basic enumeration set for querying unlimited capabilities */
-	DTV_FE_CAPABILITY_COUNT,
-	DTV_FE_CAPABILITY,
-
-	/* New commands are always appended */
-	DTV_DELIVERY_SYSTEM,
 #if 0
-	/* ISDB */
-	/* maybe a dup of DTV_ISDB_SOUND_BROADCASTING_SUBCHANNEL_ID ??? */
-	DTV_ISDB_SEGMENT_IDX,
-	DTV_ISDB_SEGMENT_WIDTH, /* 1, 3 or 13 ??? */
+/* ISDB */
+/* maybe a dup of DTV_ISDB_SOUND_BROADCASTING_SUBCHANNEL_ID ??? */
+#define DTV_ISDB_SEGMENT_IDX	18
+/* 1, 3 or 13 ??? */
+#define DTV_ISDB_SEGMENT_WIDTH	19
 
-	/* the central segment can be received independently or 1/3 seg in SB-mode */
-	DTV_ISDB_PARTIAL_RECEPTION,
-	/* sound broadcasting is used 0 = 13segment, 1 = 1 or 3 see DTV_ISDB_PARTIAL_RECEPTION */
-	DTV_ISDB_SOUND_BROADCASTING,
+/* the central segment can be received independently or 1/3 seg in SB-mode */
+#define DTV_ISDB_PARTIAL_RECEPTION	20
+/* sound broadcasting is used 0 = 13segment, 1 = 1 or 3 see DTV_ISDB_PARTIAL_RECEPTION */
+#define DTV_ISDB_SOUND_BROADCASTING	21
 
-	/* only used in SB */
-	/* determines the initial PRBS of the segment (to match with 13seg channel) */
-	DTV_ISDB_SOUND_BROADCASTING_SUBCHANNEL_ID,
+/* only used in SB */
+/* determines the initial PRBS of the segment (to match with 13seg channel) */
+#define DTV_ISDB_SOUND_BROADCASTING_SUBCHANNEL_ID	22
 
-	DTV_ISDB_LAYERA_FEC,
-	DTV_ISDB_LAYERA_MODULATION,
-	DTV_ISDB_LAYERA_SEGMENT_WIDTH,
-	DTV_ISDB_LAYERA_TIME_INTERLEAVER,
+#define DTV_ISDB_LAYERA_FEC			23
+#define DTV_ISDB_LAYERA_MODULATION		24
+#define DTV_ISDB_LAYERA_SEGMENT_WIDTH		25
+#define DTV_ISDB_LAYERA_TIME_INTERLEAVER	26
 
-	DTV_ISDB_LAYERB_FEC,
-	DTV_ISDB_LAYERB_MODULATION,
-	DTV_ISDB_LAYERB_SEGMENT_WIDTH,
-	DTV_ISDB_LAYERB_TIME_INTERLEAVING,
+#define DTV_ISDB_LAYERB_FEC			27
+#define DTV_ISDB_LAYERB_MODULATION		28
+#define DTV_ISDB_LAYERB_SEGMENT_WIDTH		29
+#define DTV_ISDB_LAYERB_TIME_INTERLEAVING	30
 
-	DTV_ISDB_LAYERC_FEC,
-	DTV_ISDB_LAYERC_MODULATION,
-	DTV_ISDB_LAYERC_SEGMENT_WIDTH,
-	DTV_ISDB_LAYERC_TIME_INTERLEAVING,
+#define DTV_ISDB_LAYERC_FEC			31
+#define DTV_ISDB_LAYERC_MODULATION		32
+#define DTV_ISDB_LAYERC_SEGMENT_WIDTH		33
+#define DTV_ISDB_LAYERC_TIME_INTERLEAVING	34
 #endif
-} dtv_cmd_types_t;
+#define DTV_API_VERSION				35
 
 typedef enum fe_pilot {
 	PILOT_ON,
@@ -366,6 +355,7 @@ struct dtv_property {
 			void *reserved2;
 		} buffer;
 	} u;
+	int result;
 } __attribute__ ((packed));
 
 /* No more than 16 properties during any given ioctl */
