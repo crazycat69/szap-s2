@@ -38,10 +38,10 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#include "dvb/frontend.h"
-#include "dvb/dmx.h"
-#include "dvb/audio.h"
-#include "dvb/version.h"
+#include <frontend.h>
+#include <dmx.h>
+#include <audio.h>
+#include <version.h>
 #include "lnb.h"
 
 #ifndef TRUE
@@ -511,7 +511,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 	result = FALSE;
 
 	if ((ioctl(fefd, FE_SET_PROPERTY, &cmdseq)) == -1) {
-		perror("FE_SET_PROPERTY failed");
+		perror("FE_SET_PROPERTY DTV_CLEAR failed");
 		return FALSE;
 	}
 
