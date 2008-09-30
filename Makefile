@@ -5,7 +5,7 @@ HED=lnb.h
 OBJ=lnb.o szap-s2.o
 
 BIND=/usr/local/bin/
-INCLUDE=-I../s2/linux/include/linux/dvb
+INCLUDE=-I../s2/linux/include
 
 TARGET=szap-s2
 

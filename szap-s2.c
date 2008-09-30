@@ -38,10 +38,10 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#include <frontend.h>
-#include <dmx.h>
-#include <audio.h>
-#include <version.h>
+#include <linux/dvb/frontend.h>
+#include <linux/dvb/dmx.h>
+#include <linux/dvb/audio.h>
+#include <linux/dvb/version.h>
 #include "lnb.h"
 
 #ifndef TRUE
@@ -356,12 +356,17 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 		{ .cmd = DTV_INNER_FEC,		.u.data = fec },
 		{ .cmd = DTV_INVERSION,		.u.data = INVERSION_AUTO },
 		{ .cmd = DTV_ROLLOFF,		.u.data = rolloff },
+		{ .cmd = DTV_PILOT,		.u.data = PILOT_AUTO },
 		{ .cmd = DTV_TUNE },
 	};
 	struct dtv_properties cmdseq = {
-		.num = 8,
+		.num = 9,
 		.props = p
 	};
+	/* for VDR compatibility */
+	if ((delsys == SYS_DVBS2) && (modulation == QPSK))
+		p[2].u.data = NBC_QPSK;
+
 	/* discard stale QPSK events */
 	while (1) {
 		if (ioctl(fefd, FE_GET_EVENT, &ev) == -1)
