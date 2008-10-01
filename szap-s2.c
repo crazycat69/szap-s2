@@ -86,7 +86,7 @@ static struct t_channel_parameter_map coderate_values[] = {
   {  12, FEC_1_2,  "1/2" },
 //  {  13, FEC_1_3,  "1/3" },
 //  {  14, FEC_1_4,  "1/4" },
-//  {  23, FEC_2_3,  "2/3" },
+  {  23, FEC_2_3,  "2/3" },
 //  {  25, FEC_2_5,  "2/5" },
   {  34, FEC_3_4,  "3/4" },
   {  35, FEC_3_5,  "3/5" },
