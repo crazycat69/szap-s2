@@ -1,8 +1,5 @@
 /* szap-s2 -- simple zapping tool for the Linux DVB S2 API
  *
- * szap-s2 operates on VDR-1.7.0 (http://www.cadsoft.de/people/kls/vdr/index.htm)
- * satellite channel lists.
- *
  * Copyright (C) 2008 Igor M. Liplianin (liplianin@me.by)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -59,8 +56,10 @@
 /* location of channel list file */
 #define CHANNEL_FILE "channels.conf"
 
-/* one line of the VDR channel file has the following format:
- * ^name:frequency_MHz:polarization:sat_no:symbolrate:vpid:apid:?:service_id$
+/* one line of the szap channel file has the following format:
+ * ^name:frequency_MHz:polarization:sat_no:symbolrate:vpid:apid:service_id$
+ * one line of the VDR channel file has the following format:
+ * ^name:frequency_MHz:polarization:sat_no:symbolrate:vpid:apid:?:?:service_id:?:?:?$
  */
 
 
@@ -85,10 +84,10 @@ static struct t_channel_parameter_map inversion_values[] = {
 static struct t_channel_parameter_map coderate_values[] = {
   {   0, FEC_NONE, "none" },
   {  12, FEC_1_2,  "1/2" },
-//  {  13, DVBFE_FEC_1_3,  "1/3" },
-//  {  14, DVBFE_FEC_1_4,  "1/4" },
-//  {  23, DVBFE_FEC_2_3,  "2/3" },
-//  {  25, DVBFE_FEC_2_5,  "2/5" },
+//  {  13, FEC_1_3,  "1/3" },
+//  {  14, FEC_1_4,  "1/4" },
+//  {  23, FEC_2_3,  "2/3" },
+//  {  25, FEC_2_5,  "2/5" },
   {  34, FEC_3_4,  "3/4" },
   {  35, FEC_3_5,  "3/5" },
   {  45, FEC_4_5,  "4/5" },
@@ -102,27 +101,27 @@ static struct t_channel_parameter_map coderate_values[] = {
   };
 
 static struct t_channel_parameter_map modulation_values[] = {
- // {   0, DVBFE_MOD_NONE,    "none" },
- // {   4, DVBFE_MOD_QAM4,    "QAM4" },
+ // {   0, NONE,    "none" },
+ // {   4, QAM_4,    "QAM4" },
   {  16, QAM_16,   "QAM16" },
   {  32, QAM_32,   "QAM32" },
   {  64, QAM_64,   "QAM64" },
   { 128, QAM_128,  "QAM128" },
   { 256, QAM_256,  "QAM256" },
-//  { 512, DVBFE_MOD_QAM512,  "QAM512" },
-//  {1024, DVBFE_MOD_QAM1024, "QAM1024" },
-//  {   1, DVBFE_MOD_BPSK,    "BPSK" },
+//  { 512, QAM_512,  "QAM512" },
+//  {1024, QAM_1024, "QAM1024" },
+//  {   1, BPSK,    "BPSK" },
   {   2, QPSK,    "QPSK" },
   {   3, NBC_QPSK,   "NBC_QPSK" },
   {   5, _8PSK,    "8PSK" },
   {   6, _16APSK,  "16APSK" },
-//  {   7, DVBFE_MOD_32APSK,  "32APSK" },
-//  {   8, DVBFE_MOD_OFDM,    "OFDM" },
-//  {   9, DVBFE_MOD_COFDM,   "COFDM" },
+//  {   7, _32APSK,  "32APSK" },
+//  {   8, OFDM,    "OFDM" },
+//  {   9, COFDM,   "COFDM" },
   {  10, VSB_8,    "VSB8" },
   {  11, VSB_16,   "VSB16" },
   { 998, QAM_AUTO, "QAMAUTO" },
-//  { 999, DVBFE_MOD_AUTO },
+//  { 999, AUTO },
   { -1 }
   };
 
@@ -196,6 +195,7 @@ static char *usage_str =
     "     -f number : use given frontend (default 0)\n"
     "     -d number : use given demux (default 0)\n"
     "     -c file   : read channels list from 'file'\n"
+    "     -V        : use VDR channels list file format (default zap)\n"
     "     -b        : enable Audio Bypass (default no)\n"
     "     -x        : exit after tuning\n"
     "     -H        : human readable output\n"
@@ -578,11 +578,13 @@ static char *parse_parameter(const char *s, int *value, const struct t_channel_p
 }
 
 static int read_channels(const char *filename, int list_channels,
-			 uint32_t chan_no, const char *chan_name,
-			 unsigned int adapter, unsigned int frontend,
-			 unsigned int demux, int dvr, int rec_psi,
-			 int bypass, unsigned int delsys,
-			 int modulation, int fec, int rolloff, int human_readable, int params_debug)
+			uint32_t chan_no, const char *chan_name,
+			unsigned int adapter, unsigned int frontend,
+			unsigned int demux, int dvr, int rec_psi,
+			int bypass, unsigned int delsys,
+			int modulation, int fec, int rolloff,
+			int human_readable, int params_debug,
+			int use_vdr_format)
 {
 	FILE *cfp;
 	char buf[4096];
@@ -728,6 +730,17 @@ again:
 		if (!apid)
 			apid = 0x1fff;
 
+		if (use_vdr_format) {
+			if (!(field = strsep(&tmp, ":")))
+				goto syntax_err;
+
+			strtoul(field, NULL, 0);
+			if (!(field = strsep(&tmp, ":")))
+				goto syntax_err;
+
+			strtoul(field, NULL, 0);
+		}
+
 		if (!(field = strsep(&tmp, ":")))
 			goto syntax_err;
 
@@ -843,6 +856,7 @@ int main(int argc, char *argv[])
 	int opt, copt = 0;
 	int human_readable = 0;
 	int params_debug = 0;
+	int use_vdr_format = 0;
 
 	enum fe_delivery_system	delsys		= SYS_DVBS;
 	enum fe_modulation	modulation	= QPSK;
@@ -850,7 +864,7 @@ int main(int argc, char *argv[])
 	enum fe_rolloff		rolloff		= ROLLOFF_35;
 	
 	lnb_type = *lnb_enum(0);
-	while ((opt = getopt(argc, argv, "M:C:O:HDhqrpn:a:f:d:S:c:l:xib")) != -1) {
+	while ((opt = getopt(argc, argv, "M:C:O:HDVhqrpn:a:f:d:S:c:l:xib")) != -1) {
 		switch (opt) {
 		case '?':
 		case 'h':
@@ -913,6 +927,9 @@ int main(int argc, char *argv[])
 		case 'D':
 			params_debug = 1;
 			break;
+		case 'V':
+			use_vdr_format = 1;
+			break;
 		case 'i':
 			interactive = 1;
 			exit_after_tuning = 1;
@@ -955,7 +972,7 @@ int main(int argc, char *argv[])
 
 	if (!read_channels(chanfile, list_channels, chan_no, chan_name,
 	    adapter, frontend, demux, dvr, rec_psi, bypass, delsys,
-	    modulation, fec, rolloff, human_readable, params_debug))
+	    modulation, fec, rolloff, human_readable, params_debug, use_vdr_format))
 
 		return TRUE;
 

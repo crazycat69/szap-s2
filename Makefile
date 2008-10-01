@@ -19,6 +19,9 @@ $(OBJ): $(HED)
 install: all
 	cp $(TARGET) $(BIND)
 
+uninstall:
+	rm $(BIND)$(TARGET)
+
 clean:
 	rm -f $(OBJ) $(TARGET) *~
 
