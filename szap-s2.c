@@ -59,7 +59,7 @@
 /* one line of the szap channel file has the following format:
  * ^name:frequency_MHz:polarization:sat_no:symbolrate:vpid:apid:service_id$
  * one line of the VDR channel file has the following format:
- * ^name:frequency_MHz:polarization:sat_no:symbolrate:vpid:apid:?:?:service_id:?:?:?$
+ * ^name:frequency_MHz:polarization[coderate][delivery][modulation][rolloff]:sat_no:symbolrate:vpid:apid:?:?:service_id:?:?:?$
  */
 
 
