@@ -593,7 +593,7 @@ static int read_channels(const char *filename, int list_channels,
 	unsigned int line;
 	unsigned int freq, pol, sat_no, sr, vpid, apid, sid;
 	int ret;
-
+	int trash;
 again:
 	line = 0;
 	if (!(cfp = fopen(filename, "r"))) {
@@ -658,7 +658,10 @@ again:
 		while (field && *field) {
 			switch (toupper(*field)) {
 			case 'C':
-				field = parse_parameter(field, &fec, coderate_values);
+				if (fec == -1)
+					field = parse_parameter(field, &fec, coderate_values);
+				else
+					field = parse_parameter(field, &trash, coderate_values);
 				break;
 			case 'H':
 				pol = 0; 
@@ -672,18 +675,27 @@ again:
 				*field++;
 				break;
 			case 'M':
-				field = parse_parameter(field, &modulation, modulation_values);
+				if (modulation == -1)
+					field = parse_parameter(field, &modulation, modulation_values);
+				else
+					field = parse_parameter(field, &trash, modulation_values);
 				break;
 			case 'Z':
 			case 'O':
-				field = parse_parameter(field, &rolloff, rolloff_values);
+				if (rolloff == -1)
+					field = parse_parameter(field, &rolloff, rolloff_values);
+				else
+					field = parse_parameter(field, &trash, rolloff_values);
 				break;
 			case 'R':
 				pol = 1; 
 				*field++;
 				break;
 			case 'S':
-				field = parse_parameter(field, &delsys, system_values);
+				if (delsys == -1)
+					field = parse_parameter(field, &delsys, system_values);
+				else
+					field = parse_parameter(field, &trash, system_values);
 				break;
 			case 'V':
 				pol = 1; 
@@ -693,7 +705,19 @@ again:
 				goto syntax_err;
 			}
 		}
-		
+		/* default values for empty parameters */
+		if (fec == -1)
+			fec = FEC_AUTO;
+
+		if (modulation == -1)
+			modulation = QPSK;
+
+		if (delsys == -1)
+			delsys = SYS_DVBS;
+
+		if (rolloff == -1)
+			rolloff = ROLLOFF_35;
+
 		if (!(field = strsep(&tmp, ":")))
 			goto syntax_err;
 
@@ -858,10 +882,10 @@ int main(int argc, char *argv[])
 	int params_debug = 0;
 	int use_vdr_format = 0;
 
-	enum fe_delivery_system	delsys		= SYS_DVBS;
-	enum fe_modulation	modulation	= QPSK;
-	enum fe_code_rate	fec		= FEC_AUTO;
-	enum fe_rolloff		rolloff		= ROLLOFF_35;
+	int delsys	= -1;
+	int modulation	= -1;
+	int fec		= -1;
+	int rolloff	= -1;
 	
 	lnb_type = *lnb_enum(0);
 	while ((opt = getopt(argc, argv, "M:C:O:HDVhqrpn:a:f:d:S:c:l:xib")) != -1) {
@@ -872,17 +896,17 @@ int main(int argc, char *argv[])
 			bad_usage(argv[0], 0);
 			break;
 		case 'C':
-			parse_parameter(--optarg, (int *)&fec, coderate_values);
+			parse_parameter(--optarg, &fec, coderate_values);
 			break;
 		case 'M':
-			parse_parameter(--optarg, (int *)&modulation, modulation_values);
+			parse_parameter(--optarg, &modulation, modulation_values);
 			break;
 		case 'Z':
 		case 'O':
-			parse_parameter(--optarg, (int *)&rolloff, rolloff_values);
+			parse_parameter(--optarg, &rolloff, rolloff_values);
 			break;
 		case 'S':
-			parse_parameter(--optarg, (int *)&delsys, system_values);
+			parse_parameter(--optarg, &delsys, system_values);
 			break;
 		case 'b':
 			bypass = 1;
