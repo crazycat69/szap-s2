@@ -112,9 +112,9 @@ static struct t_channel_parameter_map modulation_values[] = {
 //  {1024, QAM_1024, "QAM1024" },
 //  {   1, BPSK,    "BPSK" },
   {   2, QPSK,    "QPSK" },
-  {   3, NBC_QPSK,   "NBC_QPSK" },
-  {   5, _8PSK,    "8PSK" },
-  {   6, _16APSK,  "16APSK" },
+//  {   3, OQPSK,   "OQPSK" },
+  {   5, PSK_8,    "8PSK" },
+  {   6, APSK_16,  "16APSK" },
 //  {   7, _32APSK,  "32APSK" },
 //  {   8, OFDM,    "OFDM" },
 //  {   9, COFDM,   "COFDM" },
@@ -207,7 +207,7 @@ static char *usage_str =
     "     -p        : add pat and pmt to TS recording (implies -r)\n"
     "                 or -n numbers for zapping\n"
     "     -S        : delivery system type DVB-S=0, DVB-S2=1\n"
-    "     -M        : modulation 1=BPSK 2=QPSK 3=NBC-QPSK(for DVB-S2) 5=8PSK\n"
+    "     -M        : modulation 1=BPSK 2=QPSK 5=8PSK\n"
     "     -C        : fec 0=NONE 12=1/2 23=2/3 34=3/4 35=3/5 45=4/5 56=5/6 67=6/7 89=8/9 910=9/10 999=AUTO\n"
     "     -O        : rolloff 35=0.35 25=0.25 20=0.20 0=UNKNOWN\n";
 
@@ -368,9 +368,6 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 		.num = 9,
 		.props = p
 	};
-	/* for VDR compatibility */
-	if ((delsys == SYS_DVBS2) && (modulation == QPSK))
-		p[2].u.data = NBC_QPSK;
 
 	/* discard stale QPSK events */
 	while (1) {
