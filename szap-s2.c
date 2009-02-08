@@ -133,7 +133,7 @@ static struct t_channel_parameter_map system_values[] = {
 
 
 static struct t_channel_parameter_map rolloff_values[] = {
-  {   0, ROLLOFF_AUTO, "auto"},
+ // {   0, ROLLOFF_AUTO, "auto"},
   {  20, ROLLOFF_20, "0.20" },
   {  25, ROLLOFF_25, "0.25" },
   {  35, ROLLOFF_35, "0.35" },
