@@ -41,8 +41,8 @@
 #include <linux/dvb/version.h>
 #include "lnb.h"
 
-#if DVB_API_VERSION != 5 || DVB_API_VERSION_MINOR != 0
-#error szap-s2 requires Linux DVB driver API version 5.0!
+#if DVB_API_VERSION < 5
+#error szap-s2 requires Linux DVB driver API version 5.0 or newer!
 #endif
 
 
