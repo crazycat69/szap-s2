@@ -187,9 +187,9 @@ static int exit_after_tuning;
 static int interactive;
 
 static char *usage_str =
-    "\nusage: szap -q\n"
+    "\nusage: szap-s2 -q\n"
     "         list known channels\n"
-    "       szap [options] {-n channel-number|channel_name}\n"
+    "       szap-s2 [options] {-n channel-number|channel_name}\n"
     "         zap to channel via number or full name (case insensitive)\n"
     "     -a number : use given adapter (default 0)\n"
     "     -f number : use given frontend (default 0)\n"
