@@ -23,6 +23,7 @@
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -861,6 +862,11 @@ syntax_err:
 	return TRUE;
 }
 
+static void handle_sigint(int sig)
+{
+	fprintf(stderr, "Interrupted by SIGINT!\n");
+	exit(2);
+}
 
 void
 bad_usage(char *pname, int prlnb)
@@ -1014,6 +1020,8 @@ int main(int argc, char *argv[])
 
 	if (rec_psi)
 		dvr=1;
+
+	signal(SIGINT, handle_sigint);
 
 	if (!read_channels(chanfile, list_channels, chan_no, chan_name,
 	    adapter, frontend, demux, dvr, rec_psi, bypass, delsys,
