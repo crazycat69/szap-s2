@@ -390,13 +390,27 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 
 
 static
-int check_frontend (int fe_fd, int dvr, int human_readable)
+int check_frontend (int fe_fd, int dvr, int human_readable, int params_debug,
+		    int hiband)
 {
 	(void)dvr;
 	fe_status_t status;
 	uint16_t snr, signal;
 	uint32_t ber, uncorrected_blocks;
 	int timeout = 0;
+	char *field;
+	struct dtv_property p[] = {
+		{ .cmd = DTV_DELIVERY_SYSTEM },
+		{ .cmd = DTV_MODULATION },
+		{ .cmd = DTV_INNER_FEC },
+		{ .cmd = DTV_ROLLOFF },
+		{ .cmd = DTV_FREQUENCY },
+		{ .cmd = DTV_SYMBOL_RATE },
+	};
+	struct dtv_properties cmdseq = {
+		.num = 6,
+		.props = p
+	};
 
 	do {
 		if (ioctl(fe_fd, FE_READ_STATUS, &status) == -1)
@@ -430,6 +444,42 @@ int check_frontend (int fe_fd, int dvr, int human_readable)
 		usleep(1000000);
 	} while (1);
 
+	if ((status & FE_HAS_LOCK) == 0)
+		return 0;
+
+	if ((ioctl(fe_fd, FE_GET_PROPERTY, &cmdseq)) == -1) {
+		perror("FE_GET_PROPERTY failed");
+		return 0;
+	}
+	/* printout found parameters here */
+	if (params_debug){
+		printf("delivery 0x%x, ", p[0].u.data);
+		printf("modulation 0x%x\n", p[1].u.data);
+		printf("coderate 0x%x, ", p[2].u.data);
+		printf("rolloff 0x%x\n", p[3].u.data);
+		printf("intermediate frequency %d,", p[4].u.data);
+	} else {
+		field = NULL;
+		map_to_user(p[0].u.data, system_values, &field);
+		printf("delivery %s, ", field);
+		field = NULL;
+		map_to_user(p[1].u.data, modulation_values, &field);
+		printf("modulation %s\n", field);
+		field = NULL;
+		map_to_user(p[2].u.data, coderate_values, &field);
+		printf("coderate %s, ", field);
+		field = NULL;
+		map_to_user(p[3].u.data, rolloff_values, &field);
+		printf("rolloff %s\n", field);
+		if (hiband)
+			printf("frequency %d,",lnb_type.high_val + p[4].u.data);
+		else
+			printf("frequency %d,",lnb_type.low_val + p[4].u.data);
+
+	}
+
+	printf("symbol_rate %d\n", p[5].u.data);
+
 	return 0;
 }
 
@@ -439,7 +489,8 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 	   unsigned int sr, unsigned int vpid, unsigned int apid,
 	   unsigned int tpid, int sid,
 	   int dvr, int rec_psi, int bypass, unsigned int delivery,
-	   int modulation, int fec, int rolloff,  int human_readable)
+	   int modulation, int fec, int rolloff,  int human_readable,
+	   int params_debug)
 {
 	struct dtv_property p[] = {
 		{ .cmd = DTV_CLEAR },
@@ -560,7 +611,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 		fprintf(stderr, "set_demux DMX_PES_TELETEXT failed\n");
 	}
 
-	check_frontend (fefd, dvr, human_readable);
+	check_frontend (fefd, dvr, human_readable, params_debug, hiband);
 
 	if (!interactive) {
 		close(patfd);
@@ -827,7 +878,8 @@ again:
 
 		ret = zap_to(adapter, frontend, demux, sat_no, freq * 1000,
 				pol, sr, vpid, apid, tpid, sid, dvr, rec_psi, bypass,
-				delsys, modulation, fec, rolloff, human_readable);
+				delsys, modulation, fec, rolloff, human_readable,
+				params_debug);
 
 		if (interactive)
 			goto again;
