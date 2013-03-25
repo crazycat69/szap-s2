@@ -42,10 +42,17 @@
 #include <linux/dvb/version.h>
 #include "lnb.h"
 
-#if DVB_API_VERSION < 5
-#error szap-s2 requires Linux DVB driver API version 5.0 or newer!
+#if DVB_API_VERSION < 5 || DVB_API_VERSION_MINOR < 2
+#error scan-s2 requires Linux DVB driver API version 5.2 and newer!
 #endif
 
+#ifndef DTV_STREAM_ID
+	#define DTV_STREAM_ID DTV_ISDBS_TS_ID
+#endif
+
+#ifndef NO_STREAM_ID_FILTER
+	#define NO_STREAM_ID_FILTER	(~0U)
+#endif
 
 #ifndef TRUE
 #define TRUE (1==1)
@@ -116,7 +123,7 @@ static struct t_channel_parameter_map modulation_values[] = {
 //  {   3, OQPSK,   "OQPSK" },
   {   5, PSK_8,    "8PSK" },
   {   6, APSK_16,  "16APSK" },
-//  {   7, _32APSK,  "32APSK" },
+  {   7, APSK_32,  "32APSK" },
 //  {   8, OFDM,    "OFDM" },
 //  {   9, COFDM,   "COFDM" },
   {  10, VSB_8,    "VSB8" },
@@ -211,7 +218,8 @@ static char *usage_str =
     "     -S        : delivery system type DVB-S=0, DVB-S2=1\n"
     "     -M        : modulation 1=BPSK 2=QPSK 5=8PSK\n"
     "     -C        : fec 0=NONE 12=1/2 23=2/3 34=3/4 35=3/5 45=4/5 56=5/6 67=6/7 89=8/9 910=9/10 999=AUTO\n"
-    "     -O        : rolloff 35=0.35 25=0.25 20=0.20 0=UNKNOWN\n";
+    "     -O        : rolloff 35=0.35 25=0.25 20=0.20 0=UNKNOWN\n"
+    "     -m        : sub-stream (MIS,MPLP) 0-255\n";
 
 static int set_demux(int dmxfd, int pid, int pes_type, int dvr)
 {
@@ -352,7 +360,7 @@ static int diseqc(int secfd, int sat_no, int pol_vert, int hi_band)
 }
 
 static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delivery_system delsys,
-		   int modulation, int fec, int rolloff)
+		   int modulation, int fec, int rolloff, int stream_id)
 {
 	struct dvb_frontend_event ev;
 	struct dtv_property p[] = {
@@ -364,10 +372,11 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 		{ .cmd = DTV_INVERSION,		.u.data = INVERSION_AUTO },
 		{ .cmd = DTV_ROLLOFF,		.u.data = rolloff },
 		{ .cmd = DTV_PILOT,		.u.data = PILOT_AUTO },
+		{ .cmd = DTV_STREAM_ID,		.u.data = stream_id },
 		{ .cmd = DTV_TUNE },
 	};
 	struct dtv_properties cmdseq = {
-		.num = 9,
+		.num = sizeof(p)/sizeof(p[0]),
 		.props = p
 	};
 
@@ -472,9 +481,9 @@ int check_frontend (int fe_fd, int dvr, int human_readable, int params_debug,
 		map_to_user(p[3].u.data, rolloff_values, &field);
 		printf("rolloff %s\n", field);
 		if (hiband)
-			printf("frequency %d,",lnb_type.high_val + p[4].u.data);
+			printf("frequency %lu,",lnb_type.high_val + p[4].u.data);
 		else
-			printf("frequency %d,",lnb_type.low_val + p[4].u.data);
+			printf("frequency %lu,",lnb_type.low_val + p[4].u.data);
 
 	}
 
@@ -489,7 +498,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 	   unsigned int sr, unsigned int vpid, unsigned int apid,
 	   unsigned int tpid, int sid,
 	   int dvr, int rec_psi, int bypass, unsigned int delivery,
-	   int modulation, int fec, int rolloff,  int human_readable,
+	   int modulation, int fec, int rolloff, int stream_id, int human_readable,
 	   int params_debug)
 {
 	struct dtv_property p[] = {
@@ -585,7 +594,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 	}
 
 	if (diseqc(fefd, sat_no, pol, hiband))
-		if (do_tune(fefd, ifreq, sr, delivery, modulation, fec, rolloff))
+		if (do_tune(fefd, ifreq, sr, delivery, modulation, fec, rolloff, stream_id))
 			if (set_demux(dmxfdv, vpid, DMX_PES_VIDEO, dvr))
 				if (audiofd >= 0)
 					(void)ioctl(audiofd, AUDIO_SET_BYPASS_MODE, bypass);
@@ -647,7 +656,7 @@ static int read_channels(const char *filename, int list_channels,
 			unsigned int adapter, unsigned int frontend,
 			unsigned int demux, int dvr, int rec_psi,
 			int bypass, unsigned int delsys,
-			int modulation, int fec, int rolloff,
+			int modulation, int fec, int rolloff, int stream_id,
 			int human_readable, int params_debug,
 			int use_vdr_format, int use_tpid)
 {
@@ -752,6 +761,9 @@ again:
 				else
 					field = parse_parameter(field, &trash, rolloff_values);
 				break;
+			case 'P':
+				stream_id = strtol(++field, &field, 10);
+				break;
 			case 'R':
 				pol = 1; 
 				*field++;
@@ -782,6 +794,9 @@ again:
 
 		if (rolloff == -1)
 			rolloff = ROLLOFF_35;
+
+		if (stream_id<0 || stream_id>255)
+			stream_id = NO_STREAM_ID_FILTER;
 
 		if (!(field = strsep(&tmp, ":")))
 			goto syntax_err;
@@ -867,18 +882,18 @@ again:
 		}
 
 		if (params_debug){
-			printf("rolloff 0x%x\n"
-				"vpid 0x%04x, apid 0x%04x, sid 0x%04x\n", rolloff, vpid, apid, sid);
+			printf("rolloff 0x%x stream_id %d\n"
+				"vpid 0x%04x, apid 0x%04x, sid 0x%04x\n", rolloff, stream_id, vpid, apid, sid);
 		} else {
 			field = NULL;
 			map_to_user(rolloff, rolloff_values, &field);
-			printf("rolloff %s\n"
-				"vpid 0x%04x, apid 0x%04x, sid 0x%04x\n", field, vpid, apid, sid);
+			printf("rolloff %s stream_id %d\n"
+				"vpid 0x%04x, apid 0x%04x, sid 0x%04x\n", field, stream_id, vpid, apid, sid);
 		}
 
 		ret = zap_to(adapter, frontend, demux, sat_no, freq * 1000,
 				pol, sr, vpid, apid, tpid, sid, dvr, rec_psi, bypass,
-				delsys, modulation, fec, rolloff, human_readable,
+				delsys, modulation, fec, rolloff, stream_id, human_readable,
 				params_debug);
 
 		if (interactive)
@@ -962,9 +977,10 @@ int main(int argc, char *argv[])
 	int modulation	= -1;
 	int fec		= -1;
 	int rolloff	= -1;
+	int stream_id	= NO_STREAM_ID_FILTER;
 	
 	lnb_type = *lnb_enum(0);
-	while ((opt = getopt(argc, argv, "M:C:O:HDVhqrpn:a:f:d:S:c:l:xibt")) != -1) {
+	while ((opt = getopt(argc, argv, "M:m:C:O:HDVhqrpn:a:f:d:S:c:l:xib")) != -1) {
 		switch (opt) {
 		case '?':
 		case 'h':
@@ -980,6 +996,9 @@ int main(int argc, char *argv[])
 		case 'Z':
 		case 'O':
 			parse_parameter(--optarg, &rolloff, rolloff_values);
+			break;
+		case 'm':
+			stream_id = strtol(optarg, NULL, 0);
 			break;
 		case 'S':
 			parse_parameter(--optarg, &delsys, system_values);
@@ -1077,7 +1096,7 @@ int main(int argc, char *argv[])
 
 	if (!read_channels(chanfile, list_channels, chan_no, chan_name,
 	    adapter, frontend, demux, dvr, rec_psi, bypass, delsys,
-	    modulation, fec, rolloff, human_readable, params_debug,
+	    modulation, fec, rolloff, stream_id, human_readable, params_debug,
 	    use_vdr_format, use_tpid))
 
 		return TRUE;
