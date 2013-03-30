@@ -219,7 +219,7 @@ static char *usage_str =
     "     -M        : modulation 1=BPSK 2=QPSK 5=8PSK\n"
     "     -C        : fec 0=NONE 12=1/2 23=2/3 34=3/4 35=3/5 45=4/5 56=5/6 67=6/7 89=8/9 910=9/10 999=AUTO\n"
     "     -O        : rolloff 35=0.35 25=0.25 20=0.20 0=UNKNOWN\n"
-    "     -m        : sub-stream (MIS,MPLP) 0-255\n";
+    "     -m        : input stream 0-255\n";
 
 static int set_demux(int dmxfd, int pid, int pes_type, int dvr)
 {
