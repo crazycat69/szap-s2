@@ -1,4 +1,4 @@
-/* szap-s2 -- simple zapping tool for the Linux DVB S2 API
+/* tzap-t2 -- simple zapping tool for the Linux DVB S2 API
  *
  * Copyright (C) 2008 Igor M. Liplianin (liplianin@me.by)
  * Copyright (C) 2013 CrazyCat (crazycat69@narod.ru)
@@ -66,9 +66,9 @@
 #define CHANNEL_FILE "channels.conf"
 
 /* one line of the szap channel file has the following format:
- * ^name:frequency_MHz:polarization:sat_no:symbolrate:vpid:apid:service_id$
+ * ^name:frequency_KHz:inversion:bandwidth:coderate_hp:coderate_lp:modulation:transmission_mode:guard_interval:hierarchy:vpid:apid:service_id$
  * one line of the VDR channel file has the following format:
- * ^name:frequency_MHz:polarization[coderate][delivery][modulation][rolloff]:sat_no:symbolrate:vpid:apid:?:?:service_id:?:?:?$
+ * ^name:frequency_KHz:[bandwidth][delivery][modulation][coderate_hp][coderate_lp][transmission_mode][guard_interval][hierarchy]]plp_id]:vpid:apid:?:?:service_id:?:?:?$
  */
 
 
@@ -90,13 +90,20 @@ static struct t_channel_parameter_map inversion_values[] = {
   { -1 }
   };
 
+static struct t_channel_parameter_map bw_values [] = {
+	{ 6, BANDWIDTH_6_MHZ, "6MHz" },
+	{ 7, BANDWIDTH_7_MHZ, "7MHz" },
+	{ 8, BANDWIDTH_8_MHZ, "8MHz" },
+	{ 5, BANDWIDTH_6_MHZ, "5MHz" },
+	{ 10, BANDWIDTH_10_MHZ, "10MHz" },
+	{ 999, BANDWIDTH_AUTO, "auto" },
+	{ -1 }
+  };
+
 static struct t_channel_parameter_map coderate_values[] = {
   {   0, FEC_NONE, "none" },
   {  12, FEC_1_2,  "1/2" },
-//  {  13, FEC_1_3,  "1/3" },
-//  {  14, FEC_1_4,  "1/4" },
   {  23, FEC_2_3,  "2/3" },
-//  {  25, FEC_2_5,  "2/5" },
   {  34, FEC_3_4,  "3/4" },
   {  35, FEC_3_5,  "3/5" },
   {  45, FEC_4_5,  "4/5" },
@@ -111,41 +118,52 @@ static struct t_channel_parameter_map coderate_values[] = {
 
 static struct t_channel_parameter_map modulation_values[] = {
  // {   0, NONE,    "none" },
- // {   4, QAM_4,    "QAM4" },
+  {   2, QPSK,    "QPSK" },
+  {  10, VSB_8,    "VSB8" },
+  {  11, VSB_16,   "VSB16" },
   {  16, QAM_16,   "QAM16" },
-  {  32, QAM_32,   "QAM32" },
   {  64, QAM_64,   "QAM64" },
   { 128, QAM_128,  "QAM128" },
   { 256, QAM_256,  "QAM256" },
-//  { 512, QAM_512,  "QAM512" },
-//  {1024, QAM_1024, "QAM1024" },
-//  {   1, BPSK,    "BPSK" },
-  {   2, QPSK,    "QPSK" },
-//  {   3, OQPSK,   "OQPSK" },
-  {   5, PSK_8,    "8PSK" },
-  {   6, APSK_16,  "16APSK" },
-  {   7, APSK_32,  "32APSK" },
-//  {   8, OFDM,    "OFDM" },
-//  {   9, COFDM,   "COFDM" },
-  {  10, VSB_8,    "VSB8" },
-  {  11, VSB_16,   "VSB16" },
-  { 998, QAM_AUTO, "QAMAUTO" },
-//  { 999, AUTO },
+  { 999, QAM_16 },
   { -1 }
+  };
+
+static struct t_channel_parameter_map mode_values [] = {
+	{ 2, TRANSMISSION_MODE_2K, "2k" },
+	{ 8, TRANSMISSION_MODE_2K, "8k" },
+	{ 999, TRANSMISSION_MODE_AUTO, "auto" },
+	{ 4, TRANSMISSION_MODE_4K, "4k" },
+	{ 1, TRANSMISSION_MODE_1K, "1k" },
+	{ 16, TRANSMISSION_MODE_16K, "16k" },
+	{ 32, TRANSMISSION_MODE_32K, "32k" },
+	{ -1 }
+  };
+
+static struct t_channel_parameter_map guard_values [] = {
+	{ 32, GUARD_INTERVAL_1_32, "1/32" },
+	{ 16, GUARD_INTERVAL_1_16, "1/16" },
+	{ 8, GUARD_INTERVAL_1_8, "1/8" },
+	{ 4, GUARD_INTERVAL_1_4, "1/4" },
+	{ 999, GUARD_INTERVAL_AUTO, "auto" },
+	{ 1128, GUARD_INTERVAL_1_128, "1/128" },
+	{ 19128, GUARD_INTERVAL_19_128, "19/128" },
+	{ 19256, GUARD_INTERVAL_19_256, "19/256" },
+	{ -1 }
+  };
+
+static struct t_channel_parameter_map hierarchy_values [] = {
+	{ 0, HIERARCHY_NONE, "none" },
+	{ 1, HIERARCHY_NONE, "1" },
+	{ 2, HIERARCHY_NONE, "2" },
+	{ 4, HIERARCHY_NONE, "4" },
+	{ 999, HIERARCHY_NONE, "auto" },
+	{ -1 }
   };
 
 static struct t_channel_parameter_map system_values[] = {
-  {   0, SYS_DVBS,  "DVB-S" },
-  {   1, SYS_DVBS2, "DVB-S2" },
-  { -1 }
-  };
-
-
-static struct t_channel_parameter_map rolloff_values[] = {
- // {   0, ROLLOFF_AUTO, "auto"},
-  {  20, ROLLOFF_20, "0.20" },
-  {  25, ROLLOFF_25, "0.25" },
-  {  35, ROLLOFF_35, "0.35" },
+  {   0, SYS_DVBT,  "DVB-T" },
+  {   1, SYS_DVBT2, "DVB-T2" },
   { -1 }
   };
 
@@ -196,9 +214,9 @@ static int exit_after_tuning;
 static int interactive;
 
 static char *usage_str =
-    "\nusage: szap-s2 -q\n"
+    "\nusage: tzap-t2 -q\n"
     "         list known channels\n"
-    "       szap-s2 [options] {-n channel-number|channel_name}\n"
+    "       tzap-t2 [options] {-n channel-number|channel_name}\n"
     "         zap to channel via number or full name (case insensitive)\n"
     "     -a number : use given adapter (default 0)\n"
     "     -f number : use given frontend (default 0)\n"
@@ -210,17 +228,14 @@ static char *usage_str =
     "     -H        : human readable output\n"
     "     -D        : params debug\n"
     "     -r        : set up /dev/dvb/adapterX/dvr0 for TS recording\n"
-    "     -l lnb-type (DVB-S Only) (use -l help to print types) or \n"
-    "     -l low[,high[,switch]] in Mhz\n"
     "     -i        : run interactively, allowing you to type in channel names\n"
     "     -p        : add pat and pmt to TS recording (implies -r)\n"
     "                 or -n numbers for zapping\n"
     "     -t        : add teletext to TS recording (needs -V)\n"
-    "     -S        : delivery system type DVB-S=0, DVB-S2=1\n"
-    "     -M        : modulation 1=BPSK 2=QPSK 5=8PSK\n"
+    "     -S        : delivery system type DVB-T=0, DVB-T2=1\n"
+    "     -M        : modulation 2=QPSK 16=16QAM 64=64QAM 256=256QAM\n"
     "     -C        : fec 0=NONE 12=1/2 23=2/3 34=3/4 35=3/5 45=4/5 56=5/6 67=6/7 89=8/9 910=9/10 999=AUTO\n"
-    "     -O        : rolloff 35=0.35 25=0.25 20=0.20 0=UNKNOWN\n"
-    "     -m        : input stream 0-255\n";
+    "     -m        : physical layer pipe 0-255\n";
 
 static int set_demux(int dmxfd, int pid, int pes_type, int dvr)
 {
@@ -310,69 +325,21 @@ int get_pmt_pid(char *dmxdev, int sid)
 	return pmt_pid;
 }
 
-struct diseqc_cmd {
-	struct dvb_diseqc_master_cmd cmd;
-	uint32_t wait;
-};
-
-void diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
-		     fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b)
-{
-	if (ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) == -1)
-		perror("FE_SET_TONE failed");
-	if (ioctl(fd, FE_SET_VOLTAGE, v) == -1)
-		perror("FE_SET_VOLTAGE failed");
-		usleep(15 * 1000);
-	if (ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) == -1)
-		perror("FE_DISEQC_SEND_MASTER_CMD failed");
-		usleep(cmd->wait * 1000);
-		usleep(15 * 1000);
-	if (ioctl(fd, FE_DISEQC_SEND_BURST, b) == -1)
-		perror("FE_DISEQC_SEND_BURST failed");
-		usleep(15 * 1000);
-	if (ioctl(fd, FE_SET_TONE, t) == -1)
-		perror("FE_SET_TONE failed");
-
-}
-
-
-
-
-/* digital satellite equipment control,
- * specification is available from http://www.eutelsat.com/
- */
-static int diseqc(int secfd, int sat_no, int pol_vert, int hi_band)
-{
-	struct diseqc_cmd cmd =
-		{ {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
-
-	/**
-	 * param: high nibble: reset bits, low nibble set bits,
-	 * bits are: option, position, polarizaion, band
-	 */
-	cmd.cmd.msg[3] =
-		0xf0 | (((sat_no * 4) & 0x0f) | (hi_band ? 1 : 0) | (pol_vert ? 0 : 2));
-
-	diseqc_send_msg(secfd, pol_vert ? SEC_VOLTAGE_13 : SEC_VOLTAGE_18,
-			&cmd, hi_band ? SEC_TONE_ON : SEC_TONE_OFF,
-			(sat_no / 4) % 2 ? SEC_MINI_B : SEC_MINI_A);
-
-	return TRUE;
-}
-
-static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delivery_system delsys,
-		   int modulation, int fec, int rolloff, int stream_id)
+static int do_tune(int fefd, unsigned int freq, unsigned int bw, enum fe_delivery_system delsys,
+		   int modulation, int fec_hp, int fec_lp, int mode, int guard, int hierarchy, int stream_id)
 {
 	struct dvb_frontend_event ev;
 	struct dtv_property p[] = {
 		{ .cmd = DTV_DELIVERY_SYSTEM,	.u.data = delsys },
-		{ .cmd = DTV_FREQUENCY,		.u.data = ifreq },
+		{ .cmd = DTV_FREQUENCY,		.u.data = freq },
+		{ .cmd = DTV_BANDWIDTH_HZ,	.u.data = bw },
 		{ .cmd = DTV_MODULATION,	.u.data = modulation },
-		{ .cmd = DTV_SYMBOL_RATE,	.u.data = sr },
-		{ .cmd = DTV_INNER_FEC,		.u.data = fec },
+		{ .cmd = DTV_CODE_RATE_HP,	.u.data = fec_hp },
+		{ .cmd = DTV_CODE_RATE_LP,	.u.data = fec_lp },
 		{ .cmd = DTV_INVERSION,		.u.data = INVERSION_AUTO },
-		{ .cmd = DTV_ROLLOFF,		.u.data = rolloff },
-		{ .cmd = DTV_PILOT,		.u.data = PILOT_AUTO },
+		{ .cmd = DTV_TRANSMISSION_MODE,	.u.data = mode },
+		{ .cmd = DTV_GUARD_INTERVAL,	.u.data = guard },
+		{ .cmd = DTV_HIERARCHY,		.u.data = hierarchy },
 		{ .cmd = DTV_STREAM_ID,		.u.data = stream_id },
 		{ .cmd = DTV_TUNE },
 	};
@@ -387,7 +354,7 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 		break;
 	}
 
-	if ((delsys != SYS_DVBS) && (delsys != SYS_DVBS2))
+	if ((delsys != SYS_DVBT) && (delsys != SYS_DVBT2))
 		return -EINVAL;
 
 	if ((ioctl(fefd, FE_SET_PROPERTY, &cmdseq)) == -1) {
@@ -400,8 +367,7 @@ static int do_tune(int fefd, unsigned int ifreq, unsigned int sr, enum fe_delive
 
 
 static
-int check_frontend (int fe_fd, int dvr, int human_readable, int params_debug,
-		    int hiband)
+int check_frontend (int fe_fd, int dvr, int human_readable, int params_debug)
 {
 	(void)dvr;
 	fe_status_t status;
@@ -410,12 +376,15 @@ int check_frontend (int fe_fd, int dvr, int human_readable, int params_debug,
 	int timeout = 0;
 	char *field;
 	struct dtv_property p[] = {
+		{ .cmd = DTV_FREQUENCY },
+		{ .cmd = DTV_BANDWIDTH_HZ },
 		{ .cmd = DTV_DELIVERY_SYSTEM },
 		{ .cmd = DTV_MODULATION },
-		{ .cmd = DTV_INNER_FEC },
-		{ .cmd = DTV_ROLLOFF },
-		{ .cmd = DTV_FREQUENCY },
-		{ .cmd = DTV_SYMBOL_RATE },
+		{ .cmd = DTV_CODE_RATE_HP },
+		{ .cmd = DTV_CODE_RATE_LP },
+		{ .cmd = DTV_TRANSMISSION_MODE },
+		{ .cmd = DTV_GUARD_INTERVAL },
+		{ .cmd = DTV_HIERARCHY },
 	};
 	struct dtv_properties cmdseq = {
 		.num = sizeof(p)/sizeof(p[0]),
@@ -463,43 +432,55 @@ int check_frontend (int fe_fd, int dvr, int human_readable, int params_debug,
 	}
 	/* printout found parameters here */
 	if (params_debug){
-		printf("delivery 0x%x, ", p[0].u.data);
-		printf("modulation 0x%x\n", p[1].u.data);
-		printf("coderate 0x%x, ", p[2].u.data);
-		printf("rolloff 0x%x\n", p[3].u.data);
-		printf("intermediate frequency %d,", p[4].u.data);
+		printf("frequency %d, ", p[0].u.data);
+		printf("bandwidth %d, ", p[1].u.data);
+		printf("delivery %d, ", p[2].u.data);
+		printf("modulation %d, ", p[3].u.data);
+		printf("coderate hp %d, ", p[4].u.data);
+		printf("coderate lp %d, ", p[5].u.data);
+		printf("mode %d, ", p[6].u.data);
+		printf("guard %d, ", p[7].u.data);
+		printf("hierarchy %d", p[8].u.data);
 	} else {
+		printf("frequency %d, ",p[0].u.data);
 		field = NULL;
-		map_to_user(p[0].u.data, system_values, &field);
+		map_to_user(p[1].u.data, bw_values, &field);
+		printf("bandwidth %s, ", field);
+		field = NULL;
+		map_to_user(p[2].u.data, system_values, &field);
 		printf("delivery %s, ", field);
 		field = NULL;
-		map_to_user(p[1].u.data, modulation_values, &field);
-		printf("modulation %s\n", field);
+		map_to_user(p[3].u.data, modulation_values, &field);
+		printf("modulation %s, ", field);
 		field = NULL;
-		map_to_user(p[2].u.data, coderate_values, &field);
-		printf("coderate %s, ", field);
+		map_to_user(p[4].u.data, coderate_values, &field);
+		printf("coderate-hp %s, ", field);
 		field = NULL;
-		map_to_user(p[3].u.data, rolloff_values, &field);
-		printf("rolloff %s\n", field);
-		if (hiband)
-			printf("frequency %lu,",lnb_type.high_val + p[4].u.data);
-		else
-			printf("frequency %lu,",lnb_type.low_val + p[4].u.data);
-
+		map_to_user(p[5].u.data, coderate_values, &field);
+		printf("coderate-lp %s, ", field);
+		field = NULL;
+		map_to_user(p[6].u.data, mode_values, &field);
+		printf("mode %s, ", field);
+		field = NULL;
+		map_to_user(p[7].u.data, guard_values, &field);
+		printf("guard %s, ", field);
+		field = NULL;
+		map_to_user(p[8].u.data, hierarchy_values, &field);
+		printf("hierarchy %s", field);
 	}
 
-	printf("symbol_rate %d\n", p[5].u.data);
+	printf("\n");
 
 	return 0;
 }
 
 static
 int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
-	   unsigned int sat_no, unsigned int freq, unsigned int pol,
-	   unsigned int sr, unsigned int vpid, unsigned int apid,
+	   unsigned int freq, unsigned int bw,
+	   unsigned int vpid, unsigned int apid,
 	   unsigned int tpid, int sid,
 	   int dvr, int rec_psi, int bypass, unsigned int delivery,
-	   int modulation, int fec, int rolloff, int stream_id, int human_readable,
+	   int modulation, int fec_hp, int fec_lp, int mode, int guard, int hierarchy, int stream_id, int human_readable,
 	   int params_debug)
 {
 	struct dtv_property p[] = {
@@ -514,8 +495,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 	char fedev[128], dmxdev[128], auddev[128];
 	static int fefd, dmxfda, dmxfdv, dmxfdt = -1, audiofd = -1, patfd, pmtfd;
 	int pmtpid;
-	uint32_t ifreq;
-	int hiband, result;
+	int result;
 
 	if (!fefd) {
 		snprintf(fedev, sizeof(fedev), FRONTENDDEVICE, adapter, frontend);
@@ -574,19 +554,6 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 	}
 
 
-	hiband = 0;
-	if (lnb_type.switch_val && lnb_type.high_val &&
-		freq >= lnb_type.switch_val)
-		hiband = 1;
-
-	if (hiband)
-		ifreq = freq - lnb_type.high_val;
-	else {
-		if (freq < lnb_type.low_val)
-			ifreq = lnb_type.low_val - freq;
-	else
-		ifreq = freq - lnb_type.low_val;
-	}
 	result = FALSE;
 
 	if ((ioctl(fefd, FE_SET_PROPERTY, &cmdseq)) == -1) {
@@ -594,8 +561,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 		return FALSE;
 	}
 
-	if (diseqc(fefd, sat_no, pol, hiband))
-		if (do_tune(fefd, ifreq, sr, delivery, modulation, fec, rolloff, stream_id))
+	if (do_tune(fefd, freq, bw, delivery, modulation, fec_hp, fec_lp, mode, guard, hierarchy, stream_id))
 			if (set_demux(dmxfdv, vpid, DMX_PES_VIDEO, dvr))
 				if (audiofd >= 0)
 					(void)ioctl(audiofd, AUDIO_SET_BYPASS_MODE, bypass);
@@ -621,7 +587,7 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 		fprintf(stderr, "set_demux DMX_PES_TELETEXT failed\n");
 	}
 
-	check_frontend (fefd, dvr, human_readable, params_debug, hiband);
+	check_frontend (fefd, dvr, human_readable, params_debug);
 
 	if (!interactive) {
 		close(patfd);
@@ -657,16 +623,15 @@ static int read_channels(const char *filename, int list_channels,
 			unsigned int adapter, unsigned int frontend,
 			unsigned int demux, int dvr, int rec_psi,
 			int bypass, unsigned int delsys,
-			int modulation, int fec, int rolloff, int stream_id,
-			int human_readable, int params_debug,
-			int use_vdr_format, int use_tpid)
+			int modulation, int fec_hp, int fec_lp, int mode, int guard, int hierarchy, int stream_id, int human_readable,
+			int params_debug, int use_vdr_format, int use_tpid)
 {
 	FILE *cfp;
 	char buf[4096];
 	char inp[256];
 	char *field, *tmp, *p;
 	unsigned int line;
-	unsigned int freq, pol, sat_no, sr, vpid, apid, tpid, sid;
+	unsigned int freq, bw, vpid, apid, tpid, sid;
 	int ret;
 	int trash;
 again:
@@ -732,22 +697,11 @@ again:
 
 		while (field && *field) {
 			switch (toupper(*field)) {
-			case 'C':
-				if (fec == -1)
-					field = parse_parameter(field, &fec, coderate_values);
+			case 'B':
+				if (bw == -1)
+					field = parse_parameter(field, &bw, bw_values);
 				else
-					field = parse_parameter(field, &trash, coderate_values);
-				break;
-			case 'H':
-				pol = 0; 
-				*field++;
-				break;
-			case 'I':/* ignore */
-				field = parse_parameter(field, &ret, inversion_values);
-				break;
-			case 'L':
-				pol = 0; 
-				*field++;
+					field = parse_parameter(field, &trash, bw_values);
 				break;
 			case 'M':
 				if (modulation == -1)
@@ -755,19 +709,41 @@ again:
 				else
 					field = parse_parameter(field, &trash, modulation_values);
 				break;
-			case 'Z':
-			case 'O':
-				if (rolloff == -1)
-					field = parse_parameter(field, &rolloff, rolloff_values);
+			case 'I':/* ignore */
+				field = parse_parameter(field, &ret, inversion_values);
+				break;
+			case 'C':
+				if (fec_hp == -1)
+					field = parse_parameter(field, &fec_hp, coderate_values);
 				else
-					field = parse_parameter(field, &trash, rolloff_values);
+					field = parse_parameter(field, &trash, coderate_values);
+				break;
+			case 'D':
+				if (fec_lp == -1)
+					field = parse_parameter(field, &fec_lp, coderate_values);
+				else
+					field = parse_parameter(field, &trash, coderate_values);
+				break;
+			case 'T':
+				if (mode == -1)
+					field = parse_parameter(field, &mode, mode_values);
+				else
+					field = parse_parameter(field, &trash, mode_values);
+				break;
+			case 'G':
+				if (guard == -1)
+					field = parse_parameter(field, &guard, guard_values);
+				else
+					field = parse_parameter(field, &trash, guard_values);
+				break;
+			case 'Y':
+				if (hierarchy == -1)
+					field = parse_parameter(field, &hierarchy, hierarchy_values);
+				else
+					field = parse_parameter(field, &trash, hierarchy_values);
 				break;
 			case 'P':
 				stream_id = strtol(++field, &field, 10);
-				break;
-			case 'R':
-				pol = 1; 
-				*field++;
 				break;
 			case 'S':
 				if (delsys == -1)
@@ -775,26 +751,31 @@ again:
 				else
 					field = parse_parameter(field, &trash, system_values);
 				break;
-			case 'V':
-				pol = 1; 
-				*field++;
-				break;
 			default:
 				goto syntax_err;
 			}
 		}
 		/* default values for empty parameters */
-		if (fec == -1)
-			fec = FEC_AUTO;
-
 		if (modulation == -1)
-			modulation = QPSK;
+			modulation = QAM_16;
 
 		if (delsys == -1)
-			delsys = SYS_DVBS;
+			delsys = SYS_DVBT;
 
-		if (rolloff == -1)
-			rolloff = ROLLOFF_35;
+		if (fec_hp == -1)
+			fec_hp = FEC_AUTO;
+
+		if (fec_lp == -1)
+			fec_lp = FEC_AUTO;
+
+		if (mode == -1)
+			mode = TRANSMISSION_MODE_AUTO;
+
+		if (guard == -1)
+			guard = GUARD_INTERVAL_AUTO;
+
+		if (hierarchy == -1)
+			hierarchy = HIERARCHY_NONE;
 
 		if (stream_id<0 || stream_id>255)
 			stream_id = NO_STREAM_ID_FILTER;
@@ -802,12 +783,8 @@ again:
 		if (!(field = strsep(&tmp, ":")))
 			goto syntax_err;
 
-		sat_no = strtoul(field, NULL, 0);
-
 		if (!(field = strsep(&tmp, ":")))
 			goto syntax_err;
-
-		sr = strtoul(field, NULL, 0) * 1000;
 
 		if (!(field = strsep(&tmp, ":")))
 			goto syntax_err;
@@ -855,8 +832,14 @@ again:
 		sid = strtoul(field, NULL, 0);
 
 		fclose(cfp);
+
+		field = NULL;
+		map_to_user(bw, bw_values, &field);
+		printf("frequency %u KHz, bandwidth %s, ",
+			freq, field);
+
 		if (params_debug){
-			printf("delivery 0x%x, ", delsys);
+			printf("delivery %d, ", delsys);
 		} else {
 			field = NULL;
 			map_to_user(delsys, system_values, &field);
@@ -864,37 +847,60 @@ again:
 		}
 
 		if (params_debug){
-			printf("modulation 0x%x\n", modulation);	
+			printf("modulation %d\n", modulation);	
 		} else {
 			field = NULL;
 			map_to_user(modulation, modulation_values, &field);
 			printf("modulation %s\n", field);
 		}
 
-		printf("sat %u, frequency %u MHz %c, symbolrate %u, ",
-			sat_no, freq, pol ? 'V' : 'H', sr);
-
 		if (params_debug){
-			printf("coderate 0x%x, ", fec);
+			printf("coderate-hp %d, ", fec_hp);
 		} else {
 			field = NULL;
-			map_to_user(fec, coderate_values, &field);
-			printf("coderate %s, ", field);
+			map_to_user(fec_hp, coderate_values, &field);
+			printf("coderate-hp %s, ", field);
 		}
 
 		if (params_debug){
-			printf("rolloff 0x%x stream_id %d\n"
-				"vpid 0x%04x, apid 0x%04x, sid 0x%04x\n", rolloff, stream_id, vpid, apid, sid);
+			printf("coderate-lp %d, ", fec_hp);
 		} else {
 			field = NULL;
-			map_to_user(rolloff, rolloff_values, &field);
-			printf("rolloff %s stream_id %d\n"
-				"vpid 0x%04x, apid 0x%04x, sid 0x%04x\n", field, stream_id, vpid, apid, sid);
+			map_to_user(fec_lp, coderate_values, &field);
+			printf("coderate-lp %s, ", field);
 		}
 
-		ret = zap_to(adapter, frontend, demux, sat_no, freq * 1000,
-				pol, sr, vpid, apid, tpid, sid, dvr, rec_psi, bypass,
-				delsys, modulation, fec, rolloff, stream_id, human_readable,
+		if (params_debug){
+			printf("mode %d, ", mode);
+		} else {
+			field = NULL;
+			map_to_user(mode, mode_values, &field);
+			printf("mode %s, ", field);
+		}
+
+		if (params_debug){
+			printf("guard %d, ", mode);
+		} else {
+			field = NULL;
+			map_to_user(guard, guard_values, &field);
+			printf("guard %s, ", field);
+		}
+
+		if (params_debug){
+			printf("hierarchy %d, ", mode);
+		} else {
+			field = NULL;
+			map_to_user(hierarchy, hierarchy_values, &field);
+			printf("hierarchy %s, ", field);
+		}
+
+		printf("plp_id %d\n", stream_id);
+
+		printf("vpid 0x%04x, apid 0x%04x, sid 0x%04x\n", vpid, apid, sid);
+
+		ret = zap_to(adapter, frontend, demux, freq * 1000, bw,
+				vpid, apid, tpid, sid, dvr, rec_psi, bypass,
+				delsys, modulation, fec_hp, fec_lp, mode, guard, hierarchy, stream_id, human_readable,
 				params_debug);
 
 		if (interactive)
@@ -937,25 +943,9 @@ static void handle_sigint(int sig)
 }
 
 void
-bad_usage(char *pname, int prlnb)
+bad_usage(char *pname)
 {
-	int i;
-	struct lnb_types_st *lnbp;
-	char **cp;
-
-	if (!prlnb) {
-		fprintf (stderr, usage_str, pname);
-	} else {
-		i = 0;
-		fprintf(stderr, "-l <lnb-type> or -l low[,high[,switch]] in Mhz\nwhere <lnb-type> is:\n");
-		while(NULL != (lnbp = lnb_enum(i))) {
-			fprintf (stderr, "%s\n", lnbp->name);
-			for (cp = lnbp->desc; *cp ; cp++) {
-				fprintf (stderr, "   %s\n", *cp);
-			}
-			i++;
-		}
-	}
+	fprintf (stderr, usage_str, pname);
 }
 
 int main(int argc, char *argv[])
@@ -977,26 +967,20 @@ int main(int argc, char *argv[])
 	int delsys	= -1;
 	int modulation	= -1;
 	int fec		= -1;
-	int rolloff	= -1;
 	int stream_id	= NO_STREAM_ID_FILTER;
 	
-	lnb_type = *lnb_enum(0);
 	while ((opt = getopt(argc, argv, "M:m:C:O:HDVhqrpn:a:f:d:S:c:l:xib")) != -1) {
 		switch (opt) {
 		case '?':
 		case 'h':
 		default:
-			bad_usage(argv[0], 0);
+			bad_usage(argv[0]);
 			break;
 		case 'C':
 			parse_parameter(--optarg, &fec, coderate_values);
 			break;
 		case 'M':
 			parse_parameter(--optarg, &modulation, modulation_values);
-			break;
-		case 'Z':
-		case 'O':
-			parse_parameter(--optarg, &rolloff, rolloff_values);
 			break;
 		case 'm':
 			stream_id = strtol(optarg, NULL, 0);
@@ -1032,12 +1016,6 @@ int main(int argc, char *argv[])
 			copt = 1;
 			strncpy(chanfile, optarg, sizeof(chanfile));
 			break;
-		case 'l':
-			if (lnb_decode(optarg, &lnb_type) < 0) {
-				bad_usage(argv[0], 1);
-				return -1;
-			}
-			break;
 		case 'x':
 			exit_after_tuning = 1;
 			break;
@@ -1058,21 +1036,18 @@ int main(int argc, char *argv[])
 			exit_after_tuning = 1;
 		}
 	}
-	lnb_type.low_val *= 1000;	/* convert to kiloherz */
-	lnb_type.high_val *= 1000;	/* convert to kiloherz */
-	lnb_type.switch_val *= 1000;	/* convert to kiloherz */
 	if (optind < argc)
 		chan_name = argv[optind];
 	if (chan_name && chan_no) {
-		bad_usage(argv[0], 0);
+		bad_usage(argv[0]);
 		return -1;
 	}
 	if (list_channels && (chan_name || chan_no)) {
-		bad_usage(argv[0], 0);
+		bad_usage(argv[0]);
 		return -1;
 	}
 	if (!list_channels && !chan_name && !chan_no && !interactive) {
-		bad_usage(argv[0], 0);
+		bad_usage(argv[0]);
 		return -1;
 	}
 
@@ -1082,10 +1057,10 @@ int main(int argc, char *argv[])
 		return TRUE;
 	}
 	snprintf(chanfile, sizeof(chanfile),
-		"%s/.szap/%i/%s", home, adapter, CHANNEL_FILE);
+		"%s/.tzap/%i/%s", home, adapter, CHANNEL_FILE);
 	if (access(chanfile, R_OK))
 		snprintf(chanfile, sizeof(chanfile),
-			 "%s/.szap/%s", home, CHANNEL_FILE);
+			 "%s/.tzap/%s", home, CHANNEL_FILE);
 	}
 
 	printf("reading channels from file '%s'\n", chanfile);
@@ -1097,7 +1072,7 @@ int main(int argc, char *argv[])
 
 	if (!read_channels(chanfile, list_channels, chan_no, chan_name,
 	    adapter, frontend, demux, dvr, rec_psi, bypass, delsys,
-	    modulation, fec, rolloff, stream_id, human_readable, params_debug,
+	    modulation, fec, -1, -1, -1, -1, stream_id, human_readable, params_debug,
 	    use_vdr_format, use_tpid))
 
 		return TRUE;
