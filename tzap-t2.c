@@ -698,10 +698,7 @@ again:
 		while (field && *field) {
 			switch (toupper(*field)) {
 			case 'B':
-				if (bw == -1)
-					field = parse_parameter(field, &bw, bw_values);
-				else
-					field = parse_parameter(field, &trash, bw_values);
+				field = parse_parameter(field, &bw, bw_values);
 				break;
 			case 'M':
 				if (modulation == -1)
