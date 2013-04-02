@@ -561,6 +561,17 @@ int zap_to(unsigned int adapter, unsigned int frontend, unsigned int demux,
 		return FALSE;
 	}
 
+	switch(bw) 
+	{
+		case BANDWIDTH_5_MHZ:	bw = 5000000; break;
+		case BANDWIDTH_6_MHZ:	bw = 6000000; break;
+		case BANDWIDTH_7_MHZ:	bw = 7000000; break;
+		case BANDWIDTH_8_MHZ:	bw = 8000000; break;
+		case BANDWIDTH_10_MHZ:	bw = 10000000; break;
+		case BANDWIDTH_AUTO:
+		default:		bw = 0;
+	}
+
 	if (do_tune(fefd, freq, bw, delivery, modulation, fec_hp, fec_lp, mode, guard, hierarchy, stream_id))
 			if (set_demux(dmxfdv, vpid, DMX_PES_VIDEO, dvr))
 				if (audiofd >= 0)
