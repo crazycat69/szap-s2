@@ -631,7 +631,7 @@ static int read_channels(const char *filename, int list_channels,
 	char inp[256];
 	char *field, *tmp, *p;
 	unsigned int line;
-	unsigned int freq, bw, vpid, apid, tpid, sid;
+	unsigned int freq = 0, bw = 0, vpid, apid, tpid, sid;
 	int ret;
 	int trash;
 again:
