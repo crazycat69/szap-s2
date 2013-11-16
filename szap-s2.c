@@ -796,8 +796,10 @@ again:
 		if (rolloff == -1)
 			rolloff = ROLLOFF_35;
 
+#if 0
 		if (stream_id<0 || stream_id>255)
 			stream_id = NO_STREAM_ID_FILTER;
+#endif
 
 		if (!(field = strsep(&tmp, ":")))
 			goto syntax_err;
